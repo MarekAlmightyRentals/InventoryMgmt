@@ -88,4 +88,95 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
     df_activity['re_order_point'] = df_activity['max_qty'] * 0.25
     df_activity['re_order_qty'] = df_activity['max_qty'] - df_activity['min_qty']
 
-    for
+    for col in ['qty_sold_calc', 'max_qty', 'min_qty', 're_order_point', 're_order_qty']:
+        df_activity[col] = df_activity[col].round(0).astype(int)
+
+    df_merge = pd.merge(
+        df_list,
+        df_activity[['partno', 'qty_sold_calc', 'max_qty', 'min_qty', 're_order_point', 're_order_qty']],
+        on='partno',
+        how='left'
+    )
+
+    # =====================
+    # SKU LOGIC
+    # =====================
+    def generate_sku(row):
+        partno_clean = str(row['partno']).replace(' ', '')
+        if row['qty_sold_calc'] > 0:
+            return f"S-{row['max_qty']}-{partno_clean}"
+        else:
+            return f"NS-{partno_clean}"
+
+    df_merge['sku'] = df_merge.apply(generate_sku, axis=1)
+
+    # =====================
+    # Vendor column
+    # =====================
+    df_merge['vendor'] = "Crader Dist. (STIHL)"
+
+    # =====================
+    # Remove unwanted columns
+    # =====================
+    drop_cols = ['upc code', 'last purchase date', 'last count date', 'dated added']
+    df_merge = df_merge.drop(columns=[col for col in drop_cols if col in df_merge.columns])
+
+    # Rename Qty_Sold_Calc to Qty_Sold (final output label)
+    df_merge.rename(columns={'qty_sold_calc': 'qty_sold'}, inplace=True)
+
+    # =====================
+    # OUTPUT TO EXCEL WITH FORMATTING
+    # =====================
+    output = BytesIO()
+    df_merge.to_excel(output, index=False)
+    output.seek(0)
+
+    # Apply formatting
+    wb = load_workbook(output)
+    ws = wb.active
+
+    yellow = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
+    red = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
+    grey = PatternFill(start_color='C0C0C0', end_color='C0C0C0', fill_type='solid')
+    green = PatternFill(start_color='00FF00', end_color='00FF00', fill_type='solid')
+
+    # Column index map
+    col_idx = {cell.value.lower(): cell.column for cell in ws[1]}
+    qty_cols = ['qty_sold', 'max_qty', 'min_qty', 're_order_point', 're_order_qty']
+
+    for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
+        sku = row[col_idx['sku'] - 1].value
+        qty_sold_val = row[col_idx['qty_sold'] - 1].value
+
+        # Highlight qty fields in yellow
+        for qc in qty_cols:
+            if qc in col_idx:
+                row[col_idx[qc] - 1].fill = yellow
+
+        # Row color logic
+        if sku.startswith("NS") and qty_sold_val > 0:
+            fill = red
+        elif sku.startswith("NS") and qty_sold_val <= 0:
+            fill = grey
+        elif sku.startswith("S-") and qty_sold_val > 0:
+            fill = green
+        else:
+            fill = grey
+
+        for cell in row:
+            cell.fill = fill
+
+    output_final = BytesIO()
+    wb.save(output_final)
+    output_final.seek(0)
+
+    st.success(f"✅ Optimization complete for **{vendor}**.")
+    st.download_button(
+        label="📥 Download optimized inventory file",
+        data=output_final,
+        file_name=f"Optimized_Inventory_{vendor.replace(' ', '_')}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+else:
+    st.info("Please upload all three required files and select a vendor.")
