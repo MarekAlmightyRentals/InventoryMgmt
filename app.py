@@ -49,18 +49,27 @@ st.markdown("---")
 if st.button("🚀 Run Optimization") and all([activity_file, history_file, list_file]):
     st.info(f"Processing inventory for **{vendor}**... Please wait.")
 
-    # LOAD AND NORMALIZE COLUMN NAMES
+    # Load and normalize Activity file
     df_activity = pd.read_excel(activity_file)
     df_activity.columns = df_activity.columns.str.strip().str.lower()
-    st.write("🔍 Columns in Merchandise Activity.xlsx:", df_activity.columns.tolist())
 
+    # Rename inconsistent column names for Crader STIHL files
+    column_rename_map = {
+        'qty_expense': 'qty_expensed',
+        'wo_qty used': 'wo_qty_used',
+        'part': 'partno'
+    }
+    df_activity.rename(columns=column_rename_map, inplace=True)
+
+    st.write("🔍 Normalized columns in Merchandise Activity.xlsx:", df_activity.columns.tolist())
+
+    # Load and normalize List file
     df_list = pd.read_excel(list_file)
     df_list.columns = df_list.columns.str.strip().str.lower()
 
     df = None
 
     if vendor == "Crader Dist. (STIHL)":
-        # EXPECTED COLUMN NAMES (normalized to lowercase)
         required_cols = ['qty_sold', 'qty_expensed', 'wo_qty_used', 'partno']
         missing_cols = [col for col in required_cols if col not in df_activity.columns]
 
@@ -87,13 +96,11 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
         df['vendor'] = "Crader Dist. (STIHL)"
 
     elif vendor == "Vendor B":
-        # Placeholder for Vendor B logic
         df = df_list.copy()
         df['vendor'] = "Vendor B"
         st.warning("Vendor B logic not yet implemented.")
 
     elif vendor == "Vendor C":
-        # Placeholder for Vendor C logic
         df = df_list.copy()
         df['vendor'] = "Vendor C"
         st.warning("Vendor C logic not yet implemented.")
