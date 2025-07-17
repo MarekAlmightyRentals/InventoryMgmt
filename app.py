@@ -28,18 +28,37 @@ st.markdown(f"📝 Selected vendor: **{vendor}**")
 st.markdown("---")
 
 # =====================
-# FILE UPLOADS WITH DESCRIPTIONS
+# UNIFIED FILE UPLOADER
 # =====================
-st.subheader("🔗 Upload Excel Files:")
+st.subheader("📂 Upload All Excel Files (Drag & Drop Supported):")
 
-activity_file = st.file_uploader("Upload Merchandise Activity.xlsx", type="xlsx")
-st.caption("🔹 **This file should contain 1 year of item movement data.**")
+uploaded_files = st.file_uploader(
+    "Upload all 3 Excel files here",
+    type="xlsx",
+    accept_multiple_files=True
+)
 
-history_file = st.file_uploader("Upload Merchandise History.xlsx", type="xlsx")
-st.caption("🔹 **This file should contain 2 years of historical movement data for ABC classification.**")
+st.caption("✅ Expected files:")
+st.caption("- Merchandise Activity.xlsx (1 year of movement data)")
+st.caption("- Merchandise History.xlsx (2 years for ABC classification)")
+st.caption("- Merchandise List.xlsx (master inventory list)")
 
-list_file = st.file_uploader("Upload Merchandise List.xlsx", type="xlsx")
-st.caption("🔹 **This file is the master inventory list to be updated.**")
+activity_file, history_file, list_file = None, None, None
+
+if uploaded_files:
+    for file in uploaded_files:
+        fname = file.name.lower()
+        if 'activity' in fname:
+            activity_file = file
+        elif 'history' in fname:
+            history_file = file
+        elif 'list' in fname:
+            list_file = file
+
+    st.markdown(f"🔍 Files detected:")
+    st.markdown(f"- {'✅' if activity_file else '❌'} Merchandise Activity file")
+    st.markdown(f"- {'✅' if history_file else '❌'} Merchandise History file")
+    st.markdown(f"- {'✅' if list_file else '❌'} Merchandise List file")
 
 st.markdown("---")
 
