@@ -67,6 +67,12 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
     df_list = pd.read_excel(list_file)
     df_list.columns = df_list.columns.str.strip().str.lower()
 
+    # Ensure 'part' → 'partno' consistency in df_list too
+    if 'part' in df_list.columns:
+        df_list.rename(columns={'part': 'partno'}, inplace=True)
+
+    st.write("🔍 Normalized columns in Merchandise List.xlsx:", df_list.columns.tolist())
+
     df = None
 
     if vendor == "Crader Dist. (STIHL)":
