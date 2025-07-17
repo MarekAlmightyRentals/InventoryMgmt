@@ -69,9 +69,11 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
 
     st.write("🔍 Columns in Merchandise List.xlsx BEFORE rename:", df_list.columns.tolist())
 
-    # Ensure 'part' → 'partno' consistency if 'part' exists
+    # Ensure consistent 'partno' key by checking both 'part' and 'part no'
     if 'part' in df_list.columns:
         df_list.rename(columns={'part': 'partno'}, inplace=True)
+    elif 'part no' in df_list.columns:
+        df_list.rename(columns={'part no': 'partno'}, inplace=True)
 
     st.write("🔍 Columns in Merchandise List.xlsx AFTER rename:", df_list.columns.tolist())
 
