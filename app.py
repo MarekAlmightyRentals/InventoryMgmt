@@ -70,19 +70,24 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
     # Load and normalize History file
     df_history = pd.read_excel(history_file)
     df_history.columns = df_history.columns.str.strip().str.lower()
-    st.write("🔎 Columns in Merchandise History.xlsx:", df_history.columns.tolist())
+
+    st.write("🔎 Columns in Merchandise History.xlsx after normalization:", df_history.columns.tolist())
 
     # Robust column renaming for partno
     if 'part' in df_history.columns:
         df_history.rename(columns={'part': 'partno'}, inplace=True)
     elif 'part no' in df_history.columns:
         df_history.rename(columns={'part no': 'partno'}, inplace=True)
+    elif 'part_no' in df_history.columns:
+        df_history.rename(columns={'part_no': 'partno'}, inplace=True)
 
     # Robust column renaming for qty_sold
     if 'sales' in df_history.columns:
         df_history.rename(columns={'sales': 'qty_sold'}, inplace=True)
     elif 'quantity sold' in df_history.columns:
         df_history.rename(columns={'quantity sold': 'qty_sold'}, inplace=True)
+    elif 'tot_qty' in df_history.columns:
+        df_history.rename(columns={'tot_qty': 'qty_sold'}, inplace=True)
 
     # Load and normalize List file
     df_list = pd.read_excel(list_file)
