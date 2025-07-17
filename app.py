@@ -122,7 +122,7 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
     # =====================
     def generate_sku(row):
         partno_clean = str(row['partno']).replace(' ', '')
-        if row['qty_sold_calc'] > 0:
+        if pd.notnull(row['qty_sold_calc']) and row['qty_sold_calc'] > 0:
             return f"S-{row['max_qty']}-{partno_clean}"
         else:
             return f"NS-{partno_clean}"
@@ -140,7 +140,7 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
     drop_cols = ['upc code', 'last purchase date', 'last count date', 'dated added']
     df_merge = df_merge.drop(columns=[col for col in drop_cols if col in df_merge.columns])
 
-    # Rename Qty_Sold_Calc to Qty_Sold (final output label)
+    # Rename Qty_Sold_Calc to Qty_Sold
     df_merge.rename(columns={'qty_sold_calc': 'qty_sold'}, inplace=True)
 
     # =====================
@@ -150,7 +150,6 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
     df_merge.to_excel(output, index=False)
     output.seek(0)
 
-    # Apply formatting
     wb = load_workbook(output)
     ws = wb.active
 
@@ -159,7 +158,6 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
     grey = PatternFill(start_color='C0C0C0', end_color='C0C0C0', fill_type='solid')
     green = PatternFill(start_color='00FF00', end_color='00FF00', fill_type='solid')
 
-    # Column index map
     col_idx = {cell.value.lower(): cell.column for cell in ws[1]}
     qty_cols = ['qty_sold', 'max_qty', 'min_qty', 're_order_point', 're_order_qty']
 
@@ -172,15 +170,19 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
             if qc in col_idx:
                 row[col_idx[qc] - 1].fill = yellow
 
-        # Row color logic
-        if sku.startswith("NS") and qty_sold_val > 0:
-            fill = red
-        elif sku.startswith("NS") and qty_sold_val <= 0:
-            fill = grey
-        elif sku.startswith("S-") and qty_sold_val > 0:
-            fill = green
-        else:
-            fill = grey
+        # Safe row coloring
+        fill = grey  # Default fallback
+        if sku:
+            if sku.startswith("NS"):
+                if qty_sold_val is not None and qty_sold_val > 0:
+                    fill = red
+                else:
+                    fill = grey
+            elif sku.startswith("S-"):
+                if qty_sold_val is not None and qty_sold_val > 0:
+                    fill = green
+                else:
+                    fill = grey
 
         for cell in row:
             cell.fill = fill
