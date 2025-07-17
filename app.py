@@ -62,13 +62,22 @@ st.markdown("---")
 if st.button("🚀 Run Optimization") and all([activity_file, history_file, list_file]):
     st.info(f"Processing inventory for **{vendor}**... Please wait.")
 
-    # Load files
-    df_activity = pd.read_excel(activity_file).rename(columns=lambda x: x.strip().lower())
-    df_history = pd.read_excel(history_file).rename(columns=lambda x: x.strip().lower())
-    df_list = pd.read_excel(list_file).rename(columns=lambda x: x.strip().lower())
-
-    # Standardize part number
+    # Load and normalize Activity file
+    df_activity = pd.read_excel(activity_file)
+    df_activity.columns = df_activity.columns.str.strip().str.lower()
     df_activity.rename(columns={'qty_expense': 'qty_expensed', 'wo_qty used': 'wo_qty_used', 'part': 'partno'}, inplace=True)
+
+    # Load and normalize History file
+    df_history = pd.read_excel(history_file)
+    df_history.columns = df_history.columns.str.strip().str.lower()
+    if 'part' in df_history.columns:
+        df_history.rename(columns={'part': 'partno'}, inplace=True)
+    elif 'part no' in df_history.columns:
+        df_history.rename(columns={'part no': 'partno'}, inplace=True)
+
+    # Load and normalize List file
+    df_list = pd.read_excel(list_file)
+    df_list.columns = df_list.columns.str.strip().str.lower()
     if 'part' in df_list.columns:
         df_list.rename(columns={'part': 'partno'}, inplace=True)
     elif 'part no' in df_list.columns:
@@ -78,16 +87,29 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
         st.error("❌ 'partno' column missing in Merchandise List.")
         st.stop()
 
-    # Calculate annual sales
+    # =====================
+    # CALCULATIONS
+    # =====================
+    required_cols = ['qty_sold', 'qty_expensed', 'wo_qty_used', 'partno']
+    missing_cols = [col for col in required_cols if col not in df_activity.columns]
+    if missing_cols:
+        st.error(f"❌ Missing columns in Activity file: {missing_cols}")
+        st.stop()
+
     df_activity['qty_sold_calc'] = df_activity[['qty_sold', 'qty_expensed', 'wo_qty_used']].sum(axis=1)
     df_activity['max_qty'] = df_activity['qty_sold_calc'] * max_factor
     df_activity['min_qty'] = df_activity['max_qty'] * min_factor
     df_activity['re_order_point'] = df_activity['max_qty'] * reorder_point_factor
     df_activity['re_order_qty'] = df_activity['max_qty'] - df_activity['min_qty']
+
     for col in ['qty_sold_calc', 'max_qty', 'min_qty', 're_order_point', 're_order_qty']:
         df_activity[col] = df_activity[col].round(0).astype(int)
 
-    # ABC Classification
+    # ABC Classification from History
+    if 'partno' not in df_history.columns or 'qty_sold' not in df_history.columns:
+        st.error("❌ 'partno' or 'qty_sold' column missing in Merchandise History file.")
+        st.stop()
+
     df_history_grouped = df_history.groupby('partno')['qty_sold'].sum().reset_index()
     df_history_grouped['rank'] = df_history_grouped['qty_sold'].rank(ascending=False, method='first')
     df_history_grouped['percentile'] = df_history_grouped['rank'] / len(df_history_grouped)
@@ -103,8 +125,12 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
     df_history_grouped['abc_class'] = df_history_grouped['percentile'].apply(assign_abc)
 
     # Merge all
-    df_merge = df_list.merge(df_activity[['partno', 'qty_sold_calc', 'max_qty', 'min_qty', 're_order_point', 're_order_qty']], on='partno', how='left')
-    df_merge = df_merge.merge(df_history_grouped[['partno', 'abc_class']], on='partno', how='left')
+    df_merge = df_list.merge(
+        df_activity[['partno', 'qty_sold_calc', 'max_qty', 'min_qty', 're_order_point', 're_order_qty']],
+        on='partno', how='left'
+    ).merge(
+        df_history_grouped[['partno', 'abc_class']], on='partno', how='left'
+    )
     df_merge.rename(columns={'qty_sold_calc': 'qty_sold'}, inplace=True)
 
     # SKU logic (no S-0 safeguard)
@@ -120,6 +146,7 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
 
     df_merge['sku'] = df_merge.apply(generate_sku, axis=1)
     df_merge['vendor'] = "Crader Dist. (STIHL)"
+
     drop_cols = ['upc code', 'last purchase date', 'last count date', 'dated added']
     df_merge.drop(columns=[col for col in drop_cols if col in df_merge.columns], inplace=True)
 
