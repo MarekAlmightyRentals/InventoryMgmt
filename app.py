@@ -61,17 +61,24 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
     }
     df_activity.rename(columns=column_rename_map, inplace=True)
 
-    st.write("🔍 Normalized columns in Merchandise Activity.xlsx:", df_activity.columns.tolist())
+    st.write("🔍 Columns in Merchandise Activity.xlsx after normalization/rename:", df_activity.columns.tolist())
 
     # Load and normalize List file
     df_list = pd.read_excel(list_file)
     df_list.columns = df_list.columns.str.strip().str.lower()
 
-    # Ensure 'part' → 'partno' consistency in df_list too
+    st.write("🔍 Columns in Merchandise List.xlsx BEFORE rename:", df_list.columns.tolist())
+
+    # Ensure 'part' → 'partno' consistency if 'part' exists
     if 'part' in df_list.columns:
         df_list.rename(columns={'part': 'partno'}, inplace=True)
 
-    st.write("🔍 Normalized columns in Merchandise List.xlsx:", df_list.columns.tolist())
+    st.write("🔍 Columns in Merchandise List.xlsx AFTER rename:", df_list.columns.tolist())
+
+    # Validate that 'partno' exists before merge
+    if 'partno' not in df_list.columns:
+        st.error("❌ Cannot proceed: 'partno' column missing in Merchandise List.xlsx after normalization and rename.")
+        st.stop()
 
     df = None
 
@@ -80,7 +87,7 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
         missing_cols = [col for col in required_cols if col not in df_activity.columns]
 
         if missing_cols:
-            st.error(f"Missing columns in Activity file for Crader Dist. (STIHL): {missing_cols}")
+            st.error(f"❌ Missing columns in Activity file for Crader Dist. (STIHL): {missing_cols}")
             st.stop()
 
         df_activity['qty_sold_calc'] = df_activity[['qty_sold', 'qty_expensed', 'wo_qty_used']].sum(axis=1)
@@ -104,12 +111,12 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
     elif vendor == "Vendor B":
         df = df_list.copy()
         df['vendor'] = "Vendor B"
-        st.warning("Vendor B logic not yet implemented.")
+        st.warning("⚠️ Vendor B logic not yet implemented.")
 
     elif vendor == "Vendor C":
         df = df_list.copy()
         df['vendor'] = "Vendor C"
-        st.warning("Vendor C logic not yet implemented.")
+        st.warning("⚠️ Vendor C logic not yet implemented.")
 
     else:
         st.error("Unknown vendor selected.")
