@@ -70,10 +70,19 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
     # Load and normalize History file
     df_history = pd.read_excel(history_file)
     df_history.columns = df_history.columns.str.strip().str.lower()
+    st.write("🔎 Columns in Merchandise History.xlsx:", df_history.columns.tolist())
+
+    # Robust column renaming for partno
     if 'part' in df_history.columns:
         df_history.rename(columns={'part': 'partno'}, inplace=True)
     elif 'part no' in df_history.columns:
         df_history.rename(columns={'part no': 'partno'}, inplace=True)
+
+    # Robust column renaming for qty_sold
+    if 'sales' in df_history.columns:
+        df_history.rename(columns={'sales': 'qty_sold'}, inplace=True)
+    elif 'quantity sold' in df_history.columns:
+        df_history.rename(columns={'quantity sold': 'qty_sold'}, inplace=True)
 
     # Load and normalize List file
     df_list = pd.read_excel(list_file)
@@ -107,7 +116,7 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
 
     # ABC Classification from History
     if 'partno' not in df_history.columns or 'qty_sold' not in df_history.columns:
-        st.error("❌ 'partno' or 'qty_sold' column missing in Merchandise History file.")
+        st.error("❌ 'partno' or 'qty_sold' column missing in Merchandise History after normalization.")
         st.stop()
 
     df_history_grouped = df_history.groupby('partno')['qty_sold'].sum().reset_index()
