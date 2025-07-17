@@ -117,16 +117,19 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
         how='left'
     )
 
-    # Rename Qty_Sold_Calc to Qty_Sold (final output label)
+    # Rename Qty_Sold_Calc to Qty_Sold
     df_merge.rename(columns={'qty_sold_calc': 'qty_sold'}, inplace=True)
 
     # =====================
-    # SKU LOGIC (✅ fixed to check final qty_sold field)
+    # SKU LOGIC (✅ No S-0 safeguard applied here)
     # =====================
     def generate_sku(row):
         partno_clean = str(row['partno']).replace(' ', '')
         if pd.notnull(row['qty_sold']) and row['qty_sold'] > 0:
-            return f"S-{int(row['max_qty'])}-{partno_clean}"
+            if pd.notnull(row['max_qty']) and int(row['max_qty']) > 0:
+                return f"S-{int(row['max_qty'])}-{partno_clean}"
+            else:
+                return f"NS-{partno_clean}"  # No S-0 SKUs
         else:
             return f"NS-{partno_clean}"
 
