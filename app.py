@@ -118,12 +118,12 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
     )
 
     # =====================
-    # SKU LOGIC
+    # SKU LOGIC (fixed int formatting!)
     # =====================
     def generate_sku(row):
         partno_clean = str(row['partno']).replace(' ', '')
         if pd.notnull(row['qty_sold_calc']) and row['qty_sold_calc'] > 0:
-            return f"S-{row['max_qty']}-{partno_clean}"
+            return f"S-{int(row['max_qty'])}-{partno_clean}"
         else:
             return f"NS-{partno_clean}"
 
