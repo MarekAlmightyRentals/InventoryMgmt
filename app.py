@@ -117,12 +117,15 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
         how='left'
     )
 
+    # Rename Qty_Sold_Calc to Qty_Sold (final output label)
+    df_merge.rename(columns={'qty_sold_calc': 'qty_sold'}, inplace=True)
+
     # =====================
-    # SKU LOGIC (fixed int formatting!)
+    # SKU LOGIC (✅ fixed to check final qty_sold field)
     # =====================
     def generate_sku(row):
         partno_clean = str(row['partno']).replace(' ', '')
-        if pd.notnull(row['qty_sold_calc']) and row['qty_sold_calc'] > 0:
+        if pd.notnull(row['qty_sold']) and row['qty_sold'] > 0:
             return f"S-{int(row['max_qty'])}-{partno_clean}"
         else:
             return f"NS-{partno_clean}"
@@ -139,9 +142,6 @@ if st.button("🚀 Run Optimization") and all([activity_file, history_file, list
     # =====================
     drop_cols = ['upc code', 'last purchase date', 'last count date', 'dated added']
     df_merge = df_merge.drop(columns=[col for col in drop_cols if col in df_merge.columns])
-
-    # Rename Qty_Sold_Calc to Qty_Sold
-    df_merge.rename(columns={'qty_sold_calc': 'qty_sold'}, inplace=True)
 
     # =====================
     # OUTPUT TO EXCEL WITH FORMATTING
