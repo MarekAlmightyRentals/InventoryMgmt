@@ -11,11 +11,11 @@ VENDOR_LIST = ["Crader Dist. (STIHL)"]
 EXPECTED_FILES = ['activity', 'history', 'list']
 
 st.set_page_config(
-    page_title="\ud83d\udce6 Almighty Rentals | Inventory Optimizer",
+    page_title="Almighty Rentals | Inventory Optimizer",
     layout="wide"
 )
 
-st.markdown("<h1 style='text-align: center;'>\ud83d\udce6 Almighty Rentals Inventory Optimizer</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>Almighty Rentals Inventory Optimizer</h1>", unsafe_allow_html=True)
 st.markdown("---")
 
 # =====================
@@ -72,13 +72,13 @@ def apply_excel_formatting(ws, col_idx):
 
 def vendor_selector():
     vendor = st.selectbox("Select Vendor", VENDOR_LIST, index=0)
-    st.markdown(f"\ud83d\udcdd Selected vendor: **{vendor}**")
+    st.markdown(f"Selected vendor: **{vendor}**")
     return vendor
 
 def file_uploader_section():
-    st.subheader("\ud83d\udcc2 Upload All Excel Files (Drag & Drop Supported):")
+    st.subheader("Upload All Excel Files (Drag & Drop Supported):")
     uploaded_files = st.file_uploader("Upload all 3 Excel files here", type="xlsx", accept_multiple_files=True)
-    st.caption("\u2705 Expected files:\n- Merchandise Activity.xlsx\n- Merchandise History.xlsx\n- Merchandise List.xlsx")
+    st.caption("Expected files:\n- Merchandise Activity.xlsx\n- Merchandise History.xlsx\n- Merchandise List.xlsx")
     return uploaded_files
 
 # =====================
@@ -87,7 +87,7 @@ def file_uploader_section():
 vendor = vendor_selector()
 st.markdown("---")
 
-st.subheader("\u2699\ufe0f Custom Stocking Parameters")
+st.subheader("Custom Stocking Parameters")
 max_factor = st.slider("Max stock coverage (% of annual sales)", 10, 100, 50) / 100
 min_factor = st.slider("Min stock threshold (% of max)", 5, 50, 25) / 100
 reorder_point_factor = st.slider("Reorder point (% of max)", 5, 50, 25) / 100
@@ -106,13 +106,13 @@ if uploaded_files:
 
     activity_file, history_file, list_file = file_map['activity'], file_map['history'], file_map['list']
 
-    st.markdown("\ud83d\udd0d **Files detected:**")
+    st.markdown("Files detected:")
     for key in EXPECTED_FILES:
-        st.markdown(f"- {'\u2705' if file_map[key] else '\u274c'} Merchandise {key.capitalize()}")
+        st.markdown(f"- {'✅' if file_map[key] else '❌'} Merchandise {key.capitalize()}")
 
 st.markdown("---")
 
-if st.button("\ud83d\ude80 Run Optimization") and all([activity_file, history_file, list_file]):
+if st.button("Run Optimization") and all([activity_file, history_file, list_file]):
     with st.spinner("Processing inventory..."):
         df_activity = pd.read_excel(activity_file)
         df_activity = normalize_columns(df_activity, {
@@ -130,7 +130,7 @@ if st.button("\ud83d\ude80 Run Optimization") and all([activity_file, history_fi
         df_list = pd.read_excel(list_file)
         df_list = normalize_columns(df_list, {'part': 'partno', 'part no': 'partno'})
         if 'partno' not in df_list.columns:
-            st.error("❌ 'partno' column missing in Merchandise List.")
+            st.error("'partno' column missing in Merchandise List.")
             st.stop()
 
         for col in ['qty_sold', 'qty_expensed', 'wo_qty_used']:
@@ -147,7 +147,7 @@ if st.button("\ud83d\ude80 Run Optimization") and all([activity_file, history_fi
             df_activity[col] = df_activity[col].round(0).astype(int)
 
         if 'partno' not in df_history or 'qty_sold' not in df_history:
-            st.error("❌ 'partno' or 'qty_sold' column missing in Merchandise History.")
+            st.error("'partno' or 'qty_sold' column missing in Merchandise History.")
             st.stop()
 
         df_history_grouped = df_history.groupby('partno')['qty_sold'].sum().reset_index()
@@ -184,21 +184,21 @@ if st.button("\ud83d\ude80 Run Optimization") and all([activity_file, history_fi
         wb.save(output_final)
         output_final.seek(0)
 
-        st.success("\u2705 Optimization complete!")
+        st.success("Optimization complete!")
         st.download_button(
-            label="\ud83d\udcc5 Download optimized inventory file",
+            label="Download optimized inventory file",
             data=output_final,
             file_name=f"Optimized_Inventory_{vendor.replace(' ', '_')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-        st.subheader("\ud83d\udcca Preview (first 20 rows)")
+        st.subheader("Preview (first 20 rows)")
         st.dataframe(df_merge.head(20))
 
         st.caption("""
-\ud83d\udd34 Red: NS items with past sales  
-\ud83d\udfe9 Green: S items with demand  
-\u2b1c Grey: No demand or invalid stocking logic  
-\ud83d\udfe8 Yellow: Key quantity metrics
+Red: NS items with past sales  
+Green: S items with demand  
+Grey: No demand or invalid stocking logic  
+Yellow: Key quantity metrics
 """)
 else:
     st.info("Please upload all three required files and select a vendor.")
